@@ -61,27 +61,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 
-chrome.webRequest.onBeforeRequest.addListener(
-    async function (details) {
-        const url = details.url;
-        const apiUrl = "http://localhost:8880/check-phishing/";
+// chrome.webRequest.onBeforeRequest.addListener(
+//     async function (details) {
+//         const url = details.url;
+//         const apiUrl = "http://localhost:8880/check-phishing/";
 
-        try {
-            const response = await fetch(apiUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: url })
-            });
+//         try {
+//             const response = await fetch(apiUrl, {
+//                 method: "POST",
+//                 headers: { "Content-Type": "application/json" },
+//                 body: JSON.stringify({ url: url })
+//             });
 
-            const result = await response.json();
+//             const result = await response.json();
 
-            if (result.status === "phishing") {
-                return { redirectUrl: chrome.runtime.getURL("blocked.html") };
-            }
-        } catch (error) {
-            console.error("API Error:", error);
-        }
-    },
-    { urls: ["<all_urls>"] },
-    ["blocking"]
-);
+//             if (result.status === "phishing") {
+//                 return { redirectUrl: chrome.runtime.getURL("blocked.html") };
+//             }
+//         } catch (error) {
+//             console.error("API Error:", error);
+//         }
+//     },
+//     { urls: ["<all_urls>"] },
+//     ["blocking"]
+// );

@@ -137,7 +137,7 @@ def scan_with_defender(file_path: str):
             "-File",
             file_path,
         ]
-        subprocess.run(
+        scan_process = subprocess.run(
             scan_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
@@ -154,12 +154,34 @@ def scan_with_defender(file_path: str):
             text=True,
         )
 
+        detection_output = result.stdout.strip()
+
+        if not detection_output:
+            if scan_process.returncode not in (0, 2):
+                error_message = scan_process.stderr.strip() or scan_process.stdout.strip()
+                return {
+                    "status": "Error",
+                    "threat_name": error_message or "Windows Defender scan failed",
+                    "risk_level": None,
+                    "threat_type": None,
+                    "recommended_action": None,
+                }
+
+            return {
+                "status": "Clean",
+                "threat_name": None,
+                "risk_level": None,
+                "threat_type": None,
+                "recommended_action": None,
+            }
+
         try:
-            threats = json.loads(result.stdout)
+            threats = json.loads(detection_output)
         except json.JSONDecodeError:
             return {
                 "status": "Error",
-                "threat_name": "Failed to parse threat detection output",
+                "threat_name": result.stderr.strip()
+                or "Failed to parse threat detection output",
                 "risk_level": None,
                 "threat_type": None,
                 "recommended_action": None,
@@ -209,9 +231,10 @@ def scan_with_defender(file_path: str):
         }
 
     except Exception as e:
+        print(e)
         return {
             "status": "Error",
-            "threat_name": str(e),
+            "threat_name": e,
             "risk_level": None,
             "threat_type": None,
             "recommended_action": None,
@@ -223,6 +246,7 @@ async def scan_files(files: list[UploadFile] = File(...)):
     scan_results = []
 
     for file in files:
+        tmp_file_path = None
         file_info = {
             "filename": file.filename,
             "content_type": file.content_type,
@@ -247,7 +271,7 @@ async def scan_files(files: list[UploadFile] = File(...)):
             file_info["threat_name"] = str(e)
 
         finally:
-            if os.path.exists(tmp_file_path):
+            if tmp_file_path and os.path.exists(tmp_file_path):
                 os.remove(tmp_file_path)
 
         scan_results.append(file_info)
