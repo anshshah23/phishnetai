@@ -39,6 +39,7 @@ function Navbar() {
     // Define your links dynamically
     const Links = [
         { name: "Home", link: "/" },
+        { name: "Chat", link: "/chat" },
         { name: "Uploads", link: "/fileUpload" },
         { name: "Analytics", link: "/analytics" },
         { name: "EmailList", link: "/emailList" },
