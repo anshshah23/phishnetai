@@ -110,6 +110,24 @@ async function detectEmailPhishing(subject, body) {
     }
 }
 
+// async function detectEmailPhishingModel(body) {
+//     try {
+//         const res = await fetch('http://localhost:8000/predict', {
+//             method: 'POST',
+//             headers: {
+//                 'Content-Type': 'application/json'
+//             },
+//             body: JSON.stringify({ message: body }),
+//             mode: 'no-cors'
+//         })
+//         const data = await res.json()
+//         return data
+//     }
+//     catch (error) {
+//         console.error("Phishing analysis failed:", error);
+//     }
+// }
+
 function EmailTable() {
     const { fetchEmails } = useAuth();
     const [emailData, setEmailData] = useState([]);
@@ -117,6 +135,7 @@ function EmailTable() {
     const [token, setToken] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [phishingResults, setPhishingResults] = useState({});
+    const [modelPhishingResults, setModelPhishingResults] = useState({});
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -135,7 +154,7 @@ function EmailTable() {
             let data = await fetchEmails(token);
             data = data.sort((a, b) => new Date(b.date) - new Date(a.date));
             setEmailData(data);
-            setCurrentIndex(0); // Set the first email as the default selection
+            setCurrentIndex(0);
 
             setCurrentIndex(0);
         } catch (error) {
@@ -158,10 +177,16 @@ function EmailTable() {
             if (!currentEmail) return; // Ensure email exists
 
             try {
+                const phishingResultModel = await detectEmailPhishingModel(currentEmail.body);
+                setModelPhishingResults((prevResults) => ({
+                    ...prevResults,
+                    [currentEmail.id]: phishingResultModel,
+                }));
+
                 const phishingResult = await detectEmailPhishing(currentEmail.subject, currentEmail.body);
                 setPhishingResults((prevResults) => ({
                     ...prevResults,
-                    [currentEmail.id]: phishingResult, // Store results per email ID
+                    [currentEmail.id]: phishingResult,
                 }));
             } catch (error) {
                 console.error("Phishing analysis failed:", error);
@@ -201,13 +226,13 @@ function EmailTable() {
                         <Field label="Date & Time" value={formatDate(currentEmail.date)} />
                         <Field label="From" value={currentEmail.from} />
                         <Field label="Subject" value={currentEmail.subject} />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                             <Field
-                                label="Phishing Analysis by LLM"
+                                label="Phishing Analysis by Model"
                                 value={
                                     currentEmail && phishingResults[currentEmail.id] ? (
                                         <div>
-                                            <p><strong>Is Phishing:</strong> {phishingResults[currentEmail.id].isPhishing ? "Yes" : "No"}</p>
+                                            <p><strong>Is Phishy:</strong> {phishingResults[currentEmail.id].isPhishing ? "Yes" : "No"}</p>
                                             <p><strong>Confidence Score:</strong> {phishingResults[currentEmail.id].confidenceScore}%</p>
 
                                             {phishingResults[currentEmail.id].phishingReasons.length > 0 && (
@@ -233,19 +258,7 @@ function EmailTable() {
                                 }
 
                             />
-                            <Field
-                                label="Phishing Analysis by Model"
-                                value={
-                                    currentEmail && phishingResults[currentEmail.id] ? (
-                                        <div>
-                                            <p><strong>Is Phishing:</strong> {phishingResults[(currentEmail.id)].isPhishing ? "Yes" : "No"}</p>
-                                            <p><strong>Confidence Score:</strong> {phishingResults[currentEmail.id].confidenceScore}%</p>
-                                            <p><strong>Reasons:</strong> {phishingResults[currentEmail.id].phishingReasons.join(", ")}</p>
-                                            <p><strong>Suggested Action:</strong> {phishingResults[currentEmail.id].suggestedAction}</p>
-                                        </div>
-                                    ) : loading ? "Loading..." : "Analyzing..."
-                                }
-                            />
+                           
                         </div>
 
                         <div className="flex flex-col md:flex-row justify-between gap-4 mt-6">
